@@ -1,19 +1,23 @@
-GCA - Grand City Authority/
+GCA - Grand City Authority # (main folder)
 │
-├── public/
-│   └── assets/
-│       ├── models/
-│       └── textures/
+├── public # (folder)
+│   └── assets # (folder)
+│       ├── models # (folder)
+│       │   ├── buildings # (folder)
+│       │   ├── characters # (folder)
+│       │   ├── props # (folder)
+│       │   └── trees # (folder)
+│       └── textures # (folder)
 │
-├── src/
-│   ├── core/
-│   ├── world/
-│   ├── player/
-│   ├── ui/
-│   ├── main.js
-│   └── style.css
+├── src # (folder)
+│   ├── core # (folder)
+│   ├── world # (folder)
+│   ├── player # (folder)
+│   ├── ui # (folder)
+│   ├── main.js # (file)
+│   └── style.css # (file)
 │
-├── index.html
-├── node_modules/
-├── package.json
-└── package-lock.json
+├── index.html # (file)
+├── node_modules # (folder)
+├── package.json # (file)
+└── package-lock.json # (file)
