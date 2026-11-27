@@ -1,8 +1,3 @@
-node -v
-npm -v
-
-If it says command not found:
-
 Open https://nodejs.org/en/download?utm_source=chatgpt.com
 Select the latest LTS release.
 Choose macOS.
@@ -18,52 +13,11 @@ v22.x.x
 10.x.x
 
 Run:
-cd ~/Documents/"GCA - Grand City Authority"
+cd ~/Documents/"GCA - Grand City Authority Prototype"
 npm init -y
 npm install three
 npm install -D vite
 mkdir -p public/assets src/core src/world src/player src/vehicles src/npcs src/missions src/audio src/ui src/utils
-
-1. Inside GCA - Grand City Authority
-
-Create a new file named:
-
-index.html
-
-2. Inside the src folder
-
-Create a new file named:
-
-style.css
-
-3. Inside the src folder
-
-Create another new file named:
-
-main.js
-
-Your structure should now look like this:
-GCA - Grand City Authority/
-│
-├── public/
-│   └── assets/
-│
-├── src/
-│   ├── core/
-│   ├── world/
-│   ├── player/
-│   ├── vehicles/
-│   ├── npcs/
-│   ├── missions/
-│   ├── audio/
-│   ├── ui/
-│   ├── utils/
-│   ├── main.js
-│   └── style.css
-│
-├── index.html
-├── package.json
-└── package-lock.json
 
 Then:
 
@@ -71,46 +25,6 @@ rmdir src/vehicles src/npcs src/missions src/audio
 mkdir -p public/assets/models public/assets/textures
 rm -rf public src
 mkdir -p public/assets/models public/assets/textures src/core src/world src/player src/ui
-
-Your project should look like this:
-GCA - Grand City Authority/
-│
-├── public/
-│   └── assets/
-│       ├── models/
-│       └── textures/
-│
-├── src/
-│   ├── core/
-│   ├── world/
-│   ├── player/
-│   └── ui/
-│
-├── node_modules/
-├── package.json
-└── package-lock.json
-
-What each folder does
-Folder	Purpose
-core	Main game engine and settings
-world	City, buildings and environment
-player	Character and movement
-ui	Game interface
-models	3D models
-textures	Roads, buildings and surfaces
-
-1. Project root
-
-Create:
-index.html
-
-
-2. Inside the src folder
-
-Create:
-main.js
-
-style.css
 
 Then:
 npm pkg set scripts.dev="vite" scripts.build="vite build" scripts.preview="vite preview"
@@ -132,4 +46,88 @@ STEP 4 — Change the JavaScript module type
    "type": "module",
 4. Press Command + S to save.
 
-Now, go to README and add code into index.html, style.css, main.js then come back here!
+The code the files should contain:
+
+index.html:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#101820">
+    <title>GCA — Grand City Authority</title>
+</head>
+<body>
+    <div id="game">
+        <div id="loading-screen">
+            <h1>GCA</h1>
+            <p>GRAND CITY AUTHORITY</p>
+            <span>INITIALIZING CITY...</span>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
+
+style.css:
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #101820;
+    font-family: Arial, sans-serif;
+}
+
+#game {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#loading-screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: white;
+    background: #101820;
+    z-index: 10;
+}
+
+#loading-screen h1 {
+    font-size: 76px;
+    letter-spacing: 12px;
+}
+
+#loading-screen p {
+    font-size: 14px;
+    letter-spacing: 5px;
+    color: #aab8c2;
+}
+
+#loading-screen span {
+    margin-top: 35px;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #65c8a3;
+}
+
+main.js:
