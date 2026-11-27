@@ -1,3 +1,5 @@
+# =============================================================
+
 Open https://nodejs.org/en/download?utm_source=chatgpt.com
 Select the latest LTS release.
 Choose macOS.
@@ -12,11 +14,15 @@ You should see two version numbers, something similar to:
 v22.x.x
 10.x.x
 
+# =============================================================
+
 Run:
 cd ~/Documents/"GCA - Grand City Authority Prototype"
 npm init -y
 npm install three
 npm install -D vite
+
+# =============================================================
 
 Then:
 
@@ -24,6 +30,8 @@ mkdir -p public/assets/models public/assets/textures src/core src/world src/play
 
 Then:
 npm pkg set scripts.dev="vite" scripts.build="vite build" scripts.preview="vite preview"
+
+# =============================================================
 
 Open package.json in VS Code.
 
@@ -41,6 +49,31 @@ STEP 4 — Change the JavaScript module type
 3. Change it to:
    "type": "module",
 4. Press Command + S to save.
+
+# =============================================================
+
+Step 1 — Download the Jacaranda tree
+1. Open Poly Haven – Jacaranda Tree.
+2. Find the download options.
+3. Select glTF as the format.
+4. Select 1K as the resolution.
+5. Click Download.
+
+Step 2 — Extract the downloaded file
+1. Open your Mac's Downloads folder.
+2. Find the Jacaranda Tree ZIP file.
+3. Double-click it to extract it.
+4. You should now have a folder containing the tree model files.
+
+Step 3
+1. Press Command (⌘) + Space.
+2. Type "GCA - Grand City Authority Prototype", then press enter.
+3. Open public → assets → models → trees.
+4. Then press "Command (⌘) + N"
+5. In the second tab: Click. "Command (⌘) + Shift + G", and type: "~/Downloads/jacaranda_tree"
+6. Drag it into the "Trees" folder!
+
+# =============================================================
 
 The code the files should contain:
 
@@ -65,6 +98,8 @@ index.html:
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>
+
+# =============================================================
 
 style.css:
 * {
@@ -126,8 +161,12 @@ canvas {
     color: #65c8a3;
 }
 
+# =============================================================
+
 main.js:
 
+
+# =============================================================
 
 package--lock.json:
 {
@@ -3712,6 +3751,8 @@ package--lock.json:
   }
 }
 
+# =============================================================
+
 package.json:
 {
   "name": "gca---grand-city-authority",
@@ -3736,3 +3777,5 @@ package.json:
     "vite": "^8.3.8"
   }
 }
+
+# =============================================================
