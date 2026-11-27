@@ -131,3 +131,5 @@ STEP 4 — Change the JavaScript module type
 3. Change it to:
    "type": "module",
 4. Press Command + S to save.
+
+Now, go to README and add code into index.html, style.css, main.js then come back here!
