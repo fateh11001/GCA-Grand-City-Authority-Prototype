@@ -1,1 +1,133 @@
-#
+node -v
+npm -v
+
+If it says command not found:
+
+Open https://nodejs.org/en/download?utm_source=chatgpt.com
+Select the latest LTS release.
+Choose macOS.
+Download the x64 (.pkg) installer.
+Install it normally.
+
+Then:
+node -v
+npm -v
+
+You should see two version numbers, something similar to:
+v22.x.x
+10.x.x
+
+Run:
+cd ~/Documents/"GCA - Grand City Authority"
+npm init -y
+npm install three
+npm install -D vite
+mkdir -p public/assets src/core src/world src/player src/vehicles src/npcs src/missions src/audio src/ui src/utils
+
+1. Inside GCA - Grand City Authority
+
+Create a new file named:
+
+index.html
+
+2. Inside the src folder
+
+Create a new file named:
+
+style.css
+
+3. Inside the src folder
+
+Create another new file named:
+
+main.js
+
+Your structure should now look like this:
+GCA - Grand City Authority/
+│
+├── public/
+│   └── assets/
+│
+├── src/
+│   ├── core/
+│   ├── world/
+│   ├── player/
+│   ├── vehicles/
+│   ├── npcs/
+│   ├── missions/
+│   ├── audio/
+│   ├── ui/
+│   ├── utils/
+│   ├── main.js
+│   └── style.css
+│
+├── index.html
+├── package.json
+└── package-lock.json
+
+Then:
+
+rmdir src/vehicles src/npcs src/missions src/audio
+mkdir -p public/assets/models public/assets/textures
+rm -rf public src
+mkdir -p public/assets/models public/assets/textures src/core src/world src/player src/ui
+
+Your project should look like this:
+GCA - Grand City Authority/
+│
+├── public/
+│   └── assets/
+│       ├── models/
+│       └── textures/
+│
+├── src/
+│   ├── core/
+│   ├── world/
+│   ├── player/
+│   └── ui/
+│
+├── node_modules/
+├── package.json
+└── package-lock.json
+
+What each folder does
+Folder	Purpose
+core	Main game engine and settings
+world	City, buildings and environment
+player	Character and movement
+ui	Game interface
+models	3D models
+textures	Roads, buildings and surfaces
+
+1. Project root
+
+Create:
+index.html
+
+
+2. Inside the src folder
+
+Create:
+main.js
+
+style.css
+
+Then:
+npm pkg set scripts.dev="vite" scripts.build="vite build" scripts.preview="vite preview"
+
+Open package.json in VS Code.
+
+You should see a section similar to:
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview"
+}
+
+STEP 4 — Change the JavaScript module type
+1. Keep package.json open in VS Code.
+2. Find this line:
+   "type": "commonjs",
+3. Change it to:
+   "type": "module",
+4. Press Command + S to save.
