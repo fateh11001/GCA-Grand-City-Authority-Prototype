@@ -165,6 +165,2129 @@ canvas {
 
 main.js:
 
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import "./style.css";
+
+// ============================================================
+// GCA — GRAND CITY AUTHORITY
+// PROTOTYPE 1.0
+// CITY, INTERACTIVE TREES, CONNECTED CHARACTER ANIMATION
+// ============================================================
+
+const game = document.querySelector("#game");
+
+if (!game) {
+    throw new Error('GCA: Could not find "#game".');
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+
+const SETTINGS = {
+    treeModel: "/assets/models/trees/jacaranda_tree/jacaranda_tree_optimized.glb",
+
+    treeHeight: 9.0,
+    treeChunkSize: 1.55,
+    treeCollisionPadding: 0.65,
+    treeLeafPushStrength: 0.72,
+    treeBranchPushStrength: 0.38,
+    treeLeafRecovery: 7.0,
+    treeBranchRecovery: 5.0,
+
+    worldHalfSize: 230,
+    roadLength: 460,
+
+    walkSpeed: 8,
+    runSpeed: 14,
+    gravity: 22,
+    jumpPower: 8,
+
+    playerRadius: 0.55,
+    playerHeight: 2.8,
+
+    maxPixelRatio: 1.25,
+    debug: true
+};
+
+// ============================================================
+// SCENE AND RENDERER
+// ============================================================
+
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0x91b8d4);
+scene.fog = new THREE.Fog(0x91b8d4, 220, 920);
+
+const camera = new THREE.PerspectiveCamera(
+    68,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1400
+);
+
+const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    powerPreference: "high-performance"
+});
+
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(
+    Math.min(window.devicePixelRatio, SETTINGS.maxPixelRatio)
+);
+
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+
+game.appendChild(renderer.domElement);
+
+// ============================================================
+// LIGHTING
+// ============================================================
+
+const skyLight = new THREE.HemisphereLight(
+    0xd8edff,
+    0x53604b,
+    2.1
+);
+
+scene.add(skyLight);
+
+const sunLight = new THREE.DirectionalLight(
+    0xffedc5,
+    3.2
+);
+
+sunLight.position.set(-220, 190, 180);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(1024, 1024);
+
+sunLight.shadow.camera.left = -360;
+sunLight.shadow.camera.right = 360;
+sunLight.shadow.camera.top = 360;
+sunLight.shadow.camera.bottom = -360;
+sunLight.shadow.camera.near = 1;
+sunLight.shadow.camera.far = 1100;
+sunLight.shadow.bias = -0.0003;
+
+scene.add(sunLight);
+
+const sunMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(10, 20, 14),
+    new THREE.MeshBasicMaterial({ color: 0xffe6a3 })
+);
+
+sunMesh.position.set(-260, 115, -410);
+scene.add(sunMesh);
+
+const sunGlow = new THREE.Mesh(
+    new THREE.SphereGeometry(15, 16, 12),
+    new THREE.MeshBasicMaterial({
+        color: 0xffd98a,
+        transparent: true,
+        opacity: 0.13,
+        depthWrite: false
+    })
+);
+
+sunGlow.position.copy(sunMesh.position);
+scene.add(sunGlow);
+
+// ============================================================
+// MATERIALS
+// ============================================================
+
+const mat = {
+    grass: new THREE.MeshStandardMaterial({
+        color: 0x536c4b,
+        roughness: 1
+    }),
+
+    road: new THREE.MeshStandardMaterial({
+        color: 0x292e33,
+        roughness: 0.95
+    }),
+
+    roadLine: new THREE.MeshStandardMaterial({
+        color: 0xe9e3d3
+    }),
+
+    yellowLine: new THREE.MeshStandardMaterial({
+        color: 0xe6bd55
+    }),
+
+    sidewalk: new THREE.MeshStandardMaterial({
+        color: 0x999b98,
+        roughness: 1
+    }),
+
+    curb: new THREE.MeshStandardMaterial({
+        color: 0xc3c3bd
+    }),
+
+    concrete: new THREE.MeshStandardMaterial({
+        color: 0x777d80
+    }),
+
+    metal: new THREE.MeshStandardMaterial({
+        color: 0x343c42,
+        metalness: 0.7,
+        roughness: 0.4
+    }),
+
+    glass: new THREE.MeshStandardMaterial({
+        color: 0x8ebdce,
+        metalness: 0.35,
+        roughness: 0.22,
+        emissive: 0x193846,
+        emissiveIntensity: 0.2
+    }),
+
+    darkGlass: new THREE.MeshStandardMaterial({
+        color: 0x263b48,
+        metalness: 0.25,
+        roughness: 0.25
+    }),
+
+    wood: new THREE.MeshStandardMaterial({
+        color: 0x65452f,
+        roughness: 1
+    }),
+
+    lamp: new THREE.MeshStandardMaterial({
+        color: 0xffe8b3,
+        emissive: 0xffd48a,
+        emissiveIntensity: 0.8
+    }),
+
+    buildings: [
+        new THREE.MeshStandardMaterial({ color: 0xaaa69e, roughness: 0.9 }),
+        new THREE.MeshStandardMaterial({ color: 0x858d91, roughness: 0.85 }),
+        new THREE.MeshStandardMaterial({ color: 0xb5a18c, roughness: 0.9 }),
+        new THREE.MeshStandardMaterial({ color: 0x777b80, roughness: 0.9 }),
+        new THREE.MeshStandardMaterial({ color: 0x9baeb5, roughness: 0.85 }),
+        new THREE.MeshStandardMaterial({ color: 0x9c9286, roughness: 0.9 })
+    ]
+};
+
+// ============================================================
+// COLLISION DATA
+// ============================================================
+
+const colliders = [];
+
+function addCollider(x, z, width, depth) {
+    colliders.push({
+        minX: x - width / 2,
+        maxX: x + width / 2,
+        minZ: z - depth / 2,
+        maxZ: z + depth / 2
+    });
+}
+
+const unitBoxGeometry = new THREE.BoxGeometry(1, 1, 1);
+
+const cloudSphereGeometry = new THREE.SphereGeometry(
+    1, 10, 8
+);
+
+// ============================================================
+// WORLD HELPERS
+// ============================================================
+
+function addBox(
+    x, y, z,
+    width, height, depth,
+    material,
+    collision = false,
+    castShadow = false
+) {
+    const mesh = new THREE.Mesh(unitBoxGeometry, material);
+
+    mesh.position.set(x, y, z);
+    mesh.scale.set(width, height, depth);
+
+    mesh.castShadow = castShadow;
+    mesh.receiveShadow = false;
+
+    scene.add(mesh);
+
+    if (collision) {
+        addCollider(x, z, width, depth);
+    }
+
+    return mesh;
+}
+
+function addCylinder(
+    x, y, z,
+    radiusTop, radiusBottom, height,
+    material,
+    collision = false
+) {
+    const geometry = new THREE.CylinderGeometry(
+        radiusTop,
+        radiusBottom,
+        height,
+        10
+    );
+
+    const mesh = new THREE.Mesh(geometry, material);
+
+    mesh.position.set(x, y, z);
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+
+    scene.add(mesh);
+
+    if (collision) {
+        const radius = Math.max(radiusTop, radiusBottom);
+        addCollider(x, z, radius * 2, radius * 2);
+    }
+
+    return mesh;
+}
+
+// ============================================================
+// GROUND AND STREETS
+// ============================================================
+
+addBox(
+    0, -0.65, 0,
+    SETTINGS.worldHalfSize * 2,
+    1,
+    SETTINGS.worldHalfSize * 2,
+    mat.grass
+);
+
+// Main avenue
+
+addBox(
+    0, -0.08, 0,
+    25, 0.2, SETTINGS.roadLength,
+    mat.road
+);
+
+// Cross streets — kept inside the smaller map
+
+for (let z = -210; z <= 210; z += 60) {
+    addBox(
+        0, -0.07, z,
+        SETTINGS.roadLength, 0.2, 18,
+        mat.road
+    );
+}
+
+// Main avenue sidewalks
+
+for (const x of [-14.7, 14.7]) {
+    addBox(
+        x, 0.04, 0,
+        4.2, 0.3, SETTINGS.roadLength,
+        mat.sidewalk
+    );
+}
+
+// Curbs
+
+for (const x of [-12.5, 12.5]) {
+    addBox(
+        x, 0.13, 0,
+        0.35, 0.42, SETTINGS.roadLength,
+        mat.curb
+    );
+}
+
+// Lane markings
+
+for (let z = -222; z <= 222; z += 12) {
+    addBox(
+        0, 0.035, z,
+        0.22, 0.035, 5.5,
+        mat.yellowLine
+    );
+}
+
+for (const x of [-10.5, 10.5]) {
+    addBox(
+        x, 0.035, 0,
+        0.14, 0.035, SETTINGS.roadLength,
+        mat.roadLine
+    );
+}
+
+// Crosswalks
+
+for (let z = -210; z <= 210; z += 60) {
+    for (let i = -4; i <= 4; i++) {
+        addBox(
+            i * 1.05,
+            0.045,
+            z - 5,
+            0.62,
+            0.04,
+            2.2,
+            mat.roadLine
+        );
+    }
+}
+
+// Parallel avenues
+
+const sideAvenuePositions = [-150, 150];
+
+for (const avenueX of sideAvenuePositions) {
+    addBox(
+        avenueX, -0.08, 0,
+        22, 0.2, SETTINGS.roadLength,
+        mat.road
+    );
+
+    for (const side of [-1, 1]) {
+        const sidewalkX = avenueX + side * 13.1;
+        const curbX = avenueX + side * 11.0;
+
+        addBox(
+            sidewalkX, 0.04, 0,
+            4.2, 0.3, SETTINGS.roadLength,
+            mat.sidewalk
+        );
+
+        addBox(
+            curbX, 0.13, 0,
+            0.35, 0.42, SETTINGS.roadLength,
+            mat.curb
+        );
+    }
+
+    for (let z = -222; z <= 222; z += 12) {
+        addBox(
+            avenueX, 0.035, z,
+            0.18, 0.035, 5.5,
+            mat.yellowLine
+        );
+    }
+
+    for (const side of [-1, 1]) {
+        addBox(
+            avenueX + side * 7.5, 0.035, 0,
+            0.12, 0.035, SETTINGS.roadLength,
+            mat.roadLine
+        );
+    }
+
+    for (let z = -210; z <= 210; z += 60) {
+        for (let i = -4; i <= 4; i++) {
+            addBox(
+                avenueX + i * 1.05,
+                0.045,
+                z - 5,
+                0.62,
+                0.04,
+                2.2,
+                mat.roadLine
+            );
+        }
+    }
+}
+
+// ============================================================
+// INSTANCED WINDOWS AND FRAMES
+// ============================================================
+
+const windowPositions = [];
+const framePositions = [];
+
+const windowGeometry = new THREE.BoxGeometry(1.45, 1.9, 0.12);
+const frameGeometry = new THREE.BoxGeometry(1.55, 0.07, 0.16);
+
+const dummy = new THREE.Object3D();
+
+function queueWindow(x, y, z, rotationY = 0) {
+    windowPositions.push({ x, y, z, rotationY });
+
+    framePositions.push({
+        x, y: y - 1, z, rotationY
+    });
+
+    framePositions.push({
+        x, y: y + 1, z, rotationY
+    });
+}
+
+function buildWindowInstances() {
+    if (!windowPositions.length) return;
+
+    const windows = new THREE.InstancedMesh(
+        windowGeometry,
+        mat.glass,
+        windowPositions.length
+    );
+
+    windows.castShadow = false;
+    windows.receiveShadow = false;
+
+    windowPositions.forEach((p, i) => {
+        dummy.position.set(p.x, p.y, p.z);
+        dummy.rotation.set(0, p.rotationY, 0);
+        dummy.scale.set(1, 1, 1);
+        dummy.updateMatrix();
+
+        windows.setMatrixAt(i, dummy.matrix);
+    });
+
+    windows.instanceMatrix.needsUpdate = true;
+    scene.add(windows);
+
+    const frames = new THREE.InstancedMesh(
+        frameGeometry,
+        mat.concrete,
+        framePositions.length
+    );
+
+    frames.castShadow = false;
+    frames.receiveShadow = false;
+
+    framePositions.forEach((p, i) => {
+        dummy.position.set(p.x, p.y, p.z);
+        dummy.rotation.set(0, p.rotationY, 0);
+        dummy.scale.set(1, 1, 1);
+        dummy.updateMatrix();
+
+        frames.setMatrixAt(i, dummy.matrix);
+    });
+
+    frames.instanceMatrix.needsUpdate = true;
+    scene.add(frames);
+}
+
+// ============================================================
+// BUILDINGS
+// ============================================================
+
+const buildingFootprints = [];
+
+function createBuilding(
+    x, z,
+    width, depth, height,
+    material
+) {
+    buildingFootprints.push({
+        minX: x - width / 2 - 1,
+        maxX: x + width / 2 + 1,
+        minZ: z - depth / 2 - 1,
+        maxZ: z + depth / 2 + 1
+    });
+
+    const structure = addBox(
+        x,
+        height / 2,
+        z,
+        width,
+        height,
+        depth,
+        material,
+        true,
+        true
+    );
+
+    structure.userData.cameraBlocker = true;
+
+    addBox(
+        x,
+        0.35,
+        z,
+        width,
+        0.7,
+        depth,
+        mat.concrete
+    );
+
+    addBox(
+        x,
+        height + 0.2,
+        z,
+        width + 0.5,
+        0.4,
+        depth + 0.5,
+        mat.buildings[1]
+    );
+
+    const floors = Math.max(2, Math.floor(height / 4));
+    const across = Math.max(2, Math.floor(width / 3.2));
+
+    for (let floor = 0; floor < floors; floor++) {
+        const y = 2.1 + floor * 4;
+
+        if (y > height - 1) continue;
+
+        for (let i = 0; i < across; i++) {
+            const px =
+                x - width / 2 + 1.6 +
+                i * ((width - 3.2) / Math.max(1, across - 1));
+
+            for (const side of [-1, 1]) {
+                queueWindow(
+                    px,
+                    y,
+                    z + side * (depth / 2 + 0.07),
+                    0
+                );
+            }
+
+            for (const side of [-1, 1]) {
+                const pz =
+                    z - depth / 2 + 1.6 +
+                    i * ((depth - 3.2) / Math.max(1, across - 1));
+
+                queueWindow(
+                    x + side * (width / 2 + 0.07),
+                    y,
+                    pz,
+                    Math.PI / 2
+                );
+            }
+        }
+    }
+
+    for (const side of [-1, 1]) {
+        addBox(
+            x + side * (width / 2 - 0.2),
+            height / 2,
+            z + depth / 2 + 0.1,
+            0.25,
+            height,
+            0.2,
+            mat.concrete
+        );
+    }
+
+    addBox(
+        x,
+        1.5,
+        z + depth / 2 + 0.12,
+        2.1,
+        3,
+        0.18,
+        mat.darkGlass
+    );
+
+    addBox(
+        x,
+        3.15,
+        z + depth / 2 + 0.75,
+        3.4,
+        0.22,
+        1.4,
+        mat.metal
+    );
+
+    const roofY = height + 0.65;
+
+    addBox(
+        x + width * 0.2,
+        roofY,
+        z,
+        3.5,
+        1.1,
+        3,
+        mat.concrete
+    );
+
+    addBox(
+        x - width * 0.2,
+        roofY + 0.3,
+        z + 2,
+        2.2,
+        1.7,
+        2.2,
+        mat.metal
+    );
+
+    for (let i = 0; i < 2; i++) {
+        addCylinder(
+            x - 3 + i * 6,
+            height + 1.7,
+            z - 3,
+            0.3,
+            0.3,
+            1.6,
+            mat.metal
+        );
+    }
+}
+
+// Main avenue buildings — now inside the smaller world
+
+for (let z = -180; z <= 180; z += 60) {
+    for (const side of [-1, 1]) {
+        const width = 18 + Math.random() * 7;
+        const depth = 20 + Math.random() * 7;
+        const height = 22 + Math.random() * 42;
+        const x = side * (40 + Math.random() * 3);
+
+        createBuilding(
+            x,
+            z,
+            width,
+            depth,
+            height,
+            mat.buildings[
+                Math.floor(Math.random() * mat.buildings.length)
+            ]
+        );
+    }
+}
+
+// Distant buildings
+
+for (let z = -180; z <= 180; z += 60) {
+    for (const x of [-88, 88]) {
+        const height = 18 + Math.random() * 38;
+
+        createBuilding(
+            x,
+            z,
+            27,
+            28,
+            height,
+            mat.buildings[
+                Math.floor(Math.random() * mat.buildings.length)
+            ]
+        );
+    }
+}
+
+// Additional mid-rise blocks
+
+for (let z = -180; z <= 180; z += 120) {
+    for (const side of [-1, 1]) {
+        const width = 24 + Math.random() * 6;
+        const depth = 24 + Math.random() * 5;
+        const height = 20 + Math.random() * 38;
+
+        createBuilding(
+            side * 205,
+            z,
+            width,
+            depth,
+            height,
+            mat.buildings[
+                Math.floor(Math.random() * mat.buildings.length)
+            ]
+        );
+    }
+}
+
+buildWindowInstances();
+
+// ============================================================
+// JACARANDA TREES
+// ============================================================
+
+const treeLoader = new GLTFLoader();
+const interactiveTrees = [];
+const treePositionList = [];
+
+function isTreeSpotClear(x, z) {
+    const roadHalfWidth = 9;
+    const treeRoadClearance = 4.5;
+
+    const nearestCrossStreet =
+        -210 + Math.round((z + 210) / 60) * 60;
+
+    if (
+        Math.abs(z - nearestCrossStreet) <
+        roadHalfWidth + treeRoadClearance
+    ) {
+        return false;
+    }
+
+    const buildingClearance = 3.0;
+
+    const insideBuilding = buildingFootprints.some((building) =>
+        x > building.minX - buildingClearance &&
+        x < building.maxX + buildingClearance &&
+        z > building.minZ - buildingClearance &&
+        z < building.maxZ + buildingClearance
+    );
+
+    if (insideBuilding) return false;
+
+    return treePositionList.every(([tx, tz]) =>
+        Math.hypot(x - tx, z - tz) >= 13
+    );
+}
+
+for (const side of [-1, 1]) {
+    const x = side * 18.3;
+
+    for (let block = -5; block <= 4; block++) {
+        const z =
+            block * 35 +
+            (block % 2 === 0 ? 17.5 : 10.5);
+
+        if (Math.abs(z) > 200) continue;
+
+        if (isTreeSpotClear(x, z)) {
+            treePositionList.push([x, z]);
+        }
+    }
+}
+
+for (const side of [-1, 1]) {
+    for (const z of [-215, -195, 195, 215]) {
+        const x = side * 18.3;
+
+        if (isTreeSpotClear(x, z)) {
+            treePositionList.push([x, z]);
+        }
+    }
+}
+
+for (const avenueX of sideAvenuePositions) {
+    for (const side of [-1, 1]) {
+        const x = avenueX + side * 19;
+
+        for (const z of [-180, 0, 180]) {
+            if (isTreeSpotClear(x, z)) {
+                treePositionList.push([x, z]);
+            }
+        }
+    }
+}
+
+function prepareInteractiveTree(gltfScene) {
+    gltfScene.updateMatrixWorld(true);
+
+    const bounds = new THREE.Box3().setFromObject(gltfScene);
+    const size = new THREE.Vector3();
+
+    bounds.getSize(size);
+
+    if (!Number.isFinite(size.y) || size.y <= 0) {
+        throw new Error("Invalid Jacaranda model dimensions.");
+    }
+
+    const scale = SETTINGS.treeHeight / size.y;
+
+    const offset = new THREE.Vector3(
+        -(bounds.min.x + bounds.max.x) * 0.5 * scale,
+        -bounds.min.y * scale,
+        -(bounds.min.z + bounds.max.z) * 0.5 * scale
+    );
+
+    const root = new THREE.Group();
+    const chunkSize = SETTINGS.treeChunkSize;
+
+    function buildChunks(source, group, material, type) {
+        const sourceGeometry = source.geometry;
+        const sourcePosition = sourceGeometry.getAttribute("position");
+        const sourceNormal = sourceGeometry.getAttribute("normal");
+        const sourceUV = sourceGeometry.getAttribute("uv");
+        const sourceIndex = sourceGeometry.index;
+
+        if (!sourcePosition) return;
+
+        const normalMatrix = new THREE.Matrix3()
+            .getNormalMatrix(source.matrixWorld);
+
+        const chunks = new Map();
+
+        const start = group.start;
+        const count = group.count;
+
+        const vertexPosition = new THREE.Vector3();
+        const vertexNormal = new THREE.Vector3();
+
+        for (let i = start; i + 2 < start + count; i += 3) {
+            const triangle = [];
+            const centroid = new THREE.Vector3();
+
+            for (let j = 0; j < 3; j++) {
+                const id = sourceIndex
+                    ? sourceIndex.getX(i + j)
+                    : i + j;
+
+                vertexPosition
+                    .fromBufferAttribute(sourcePosition, id)
+                    .applyMatrix4(source.matrixWorld)
+                    .multiplyScalar(scale)
+                    .add(offset);
+
+                const p = vertexPosition.clone();
+
+                if (sourceNormal) {
+                    vertexNormal
+                        .fromBufferAttribute(sourceNormal, id)
+                        .applyMatrix3(normalMatrix)
+                        .normalize();
+                } else {
+                    vertexNormal.set(0, 1, 0);
+                }
+
+                const n = vertexNormal.clone();
+
+                const uv = sourceUV
+                    ? new THREE.Vector2().fromBufferAttribute(sourceUV, id)
+                    : new THREE.Vector2();
+
+                triangle.push({ p, n, uv });
+                centroid.add(p);
+            }
+
+            centroid.multiplyScalar(1 / 3);
+
+            const key = [
+                Math.floor(centroid.x / chunkSize),
+                Math.floor(centroid.y / chunkSize),
+                Math.floor(centroid.z / chunkSize)
+            ].join("_");
+
+            if (!chunks.has(key)) {
+                chunks.set(key, {
+                    vertices: [],
+                    min: new THREE.Vector3(Infinity, Infinity, Infinity),
+                    max: new THREE.Vector3(-Infinity, -Infinity, -Infinity)
+                });
+            }
+
+            const chunk = chunks.get(key);
+
+            for (const vertex of triangle) {
+                chunk.vertices.push(vertex);
+                chunk.min.min(vertex.p);
+                chunk.max.max(vertex.p);
+            }
+        }
+
+        for (const chunk of chunks.values()) {
+            const center = chunk.min.clone()
+                .add(chunk.max)
+                .multiplyScalar(0.5);
+
+            const positions = [];
+            const normals = [];
+            const uvs = [];
+
+            let radius = 0;
+
+            for (const vertex of chunk.vertices) {
+                const local = vertex.p.clone().sub(center);
+
+                positions.push(local.x, local.y, local.z);
+                normals.push(vertex.n.x, vertex.n.y, vertex.n.z);
+                uvs.push(vertex.uv.x, vertex.uv.y);
+
+                radius = Math.max(
+                    radius,
+                    Math.hypot(local.x, local.z)
+                );
+            }
+
+            const geometry = new THREE.BufferGeometry();
+
+            geometry.setAttribute(
+                "position",
+                new THREE.Float32BufferAttribute(positions, 3)
+            );
+
+            geometry.setAttribute(
+                "normal",
+                new THREE.Float32BufferAttribute(normals, 3)
+            );
+
+            if (sourceUV) {
+                geometry.setAttribute(
+                    "uv",
+                    new THREE.Float32BufferAttribute(uvs, 2)
+                );
+            }
+
+            geometry.computeBoundingSphere();
+
+            const pivot = new THREE.Group();
+
+            const anchor = new THREE.Vector3(
+                center.x,
+                chunk.min.y,
+                center.z
+            );
+
+            pivot.position.copy(anchor);
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.copy(center).sub(anchor);
+
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+
+            pivot.add(mesh);
+            root.add(pivot);
+
+            pivot.userData.gcaTreePart = {
+                type,
+                center: center.clone(),
+                anchor: anchor.clone(),
+                radius: Math.max(radius, 0.2),
+                minY: chunk.min.y,
+                maxY: chunk.max.y
+            };
+        }
+    }
+
+    gltfScene.traverse((source) => {
+        if (!source.isMesh) return;
+
+        const materials = Array.isArray(source.material)
+            ? source.material
+            : [source.material];
+
+        const groups = source.geometry.groups.length
+            ? source.geometry.groups
+            : [{
+                start: 0,
+                count: source.geometry.index
+                    ? source.geometry.index.count
+                    : source.geometry.getAttribute("position").count,
+                materialIndex: 0
+            }];
+
+        for (const group of groups) {
+            const material = materials[group.materialIndex];
+
+            if (!material) continue;
+
+            const name =
+                `${source.name || ""} ${material.name || ""}`.toLowerCase();
+
+            let type = "branch";
+
+            if (/leaf|leaves|foliage|canopy/.test(name)) {
+                type = "leaf";
+            } else if (/trunk|bark|stem|wood/.test(name)) {
+                type = "trunk";
+            }
+
+            buildChunks(source, group, material, type);
+        }
+    });
+
+    return { root };
+}
+
+function collectTreeParts(root) {
+    const parts = [];
+
+    root.traverse((object) => {
+        const data = object.userData.gcaTreePart;
+
+        if (!data) return;
+
+        parts.push({
+            pivot: object,
+            type: data.type,
+            center: new THREE.Vector3(
+                data.center.x,
+                data.center.y,
+                data.center.z
+            ),
+            radius: data.radius,
+            minY: data.minY,
+            maxY: data.maxY,
+            bendX: 0,
+            bendZ: 0
+        });
+    });
+
+    return parts;
+}
+
+function placeJacarandaTrees(prepared) {
+    for (const [x, z] of treePositionList) {
+        const root = prepared.root.clone(true);
+
+        root.position.set(x, 0, z);
+        root.rotation.y = (Math.random() - 0.5) * 0.18;
+
+        scene.add(root);
+
+        const parts = collectTreeParts(root);
+
+        interactiveTrees.push({
+            root,
+            parts,
+            x,
+            z,
+            trunkCollider: {
+                x,
+                z,
+                radius: 0.32
+            }
+        });
+    }
+}
+
+treeLoader.load(
+    SETTINGS.treeModel,
+
+    (gltf) => {
+        try {
+            const prepared = prepareInteractiveTree(gltf.scene);
+
+            placeJacarandaTrees(prepared);
+
+            console.info(
+                `GCA: Loaded ${interactiveTrees.length} Jacaranda trees.`
+            );
+
+            console.info(
+                "GCA: Independent tree sections:",
+                interactiveTrees.reduce(
+                    (total, tree) => total + tree.parts.length,
+                    0
+                )
+            );
+        } catch (error) {
+            console.error("GCA: Tree preparation failed.", error);
+        }
+    },
+
+    (event) => {
+        if (event.total > 0) {
+            console.info(
+                `GCA: Loading trees ${Math.round(event.loaded / event.total * 100)}%`
+            );
+        }
+    },
+
+    (error) => {
+        console.error("GCA: Could not load Jacaranda model.", error);
+    }
+);
+
+// ============================================================
+// STREETLIGHTS
+// ============================================================
+
+function createStreetlight(x, z, direction) {
+    addCylinder(
+        x, 3.5, z,
+        0.11, 0.17, 7,
+        mat.metal,
+        true
+    );
+
+    addBox(
+        x + direction * 0.65,
+        6.9,
+        z,
+        1.5,
+        0.22,
+        0.55,
+        mat.lamp
+    );
+
+    addBox(
+        x + direction * 0.2,
+        6.65,
+        z,
+        0.8,
+        0.12,
+        0.12,
+        mat.metal
+    );
+}
+
+for (let z = -210; z <= 210; z += 30) {
+    createStreetlight(-13, z, 1);
+    createStreetlight(13, z, -1);
+}
+
+for (const avenueX of sideAvenuePositions) {
+    for (let z = -210; z <= 210; z += 60) {
+        createStreetlight(avenueX - 13.1, z, 1);
+        createStreetlight(avenueX + 13.1, z, -1);
+    }
+}
+
+// ============================================================
+// PROP PLACEMENT VALIDATION
+// ============================================================
+
+function pointInsideBuilding(x, z, padding = 0) {
+    return buildingFootprints.some((b) =>
+        x > b.minX - padding &&
+        x < b.maxX + padding &&
+        z > b.minZ - padding &&
+        z < b.maxZ + padding
+    );
+}
+
+function pointNearTree(x, z, padding = 0) {
+    return treePositionList.some(([tx, tz]) =>
+        Math.hypot(x - tx, z - tz) < 4.5 + padding
+    );
+}
+
+// Prevent benches and bins from being placed on top of one another.
+
+const propReservations = [];
+
+function reservePropSpot(x, z, radius) {
+    if (pointInsideBuilding(x, z, 2)) return false;
+    if (pointNearTree(x, z, 2)) return false;
+
+    const overlapsAnotherProp = propReservations.some((prop) =>
+        Math.hypot(x - prop.x, z - prop.z) <
+        radius + prop.radius
+    );
+
+    if (overlapsAnotherProp) return false;
+
+    propReservations.push({ x, z, radius });
+
+    return true;
+}
+
+// ============================================================
+// BENCHES — CORRECT DIRECTION AND SPACING
+// ============================================================
+
+function createBench(x, z, rotation = 0) {
+    const bench = new THREE.Group();
+
+    bench.position.set(x, 0, z);
+    bench.rotation.y = rotation;
+
+    scene.add(bench);
+
+    const seat = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 0.16, 0.65),
+        mat.wood
+    );
+
+    seat.position.y = 0.65;
+    bench.add(seat);
+
+    const back = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 0.8, 0.14),
+        mat.wood
+    );
+
+    back.position.set(0, 1.05, -0.25);
+    bench.add(back);
+
+    for (const side of [-1, 1]) {
+        const leg = new THREE.Mesh(
+            new THREE.BoxGeometry(0.14, 0.65, 0.14),
+            mat.metal
+        );
+
+        leg.position.set(side * 0.8, 0.32, 0);
+        bench.add(leg);
+    }
+
+    addCollider(x, z, 2.4, 1.2);
+}
+
+for (let z = -180; z <= 180; z += 60) {
+    for (const x of [-20.5, 20.5]) {
+        const benchZ = x < 0 ? z : z + 15;
+
+        if (!reservePropSpot(x, benchZ, 2.2)) {
+            continue;
+        }
+
+        // Left benches face toward the road (+X).
+        // Right benches face toward the road (-X).
+
+        const rotation = x < 0
+            ? Math.PI / 2
+            : -Math.PI / 2;
+
+        createBench(x, benchZ, rotation);
+    }
+}
+
+// ============================================================
+// TRASH BINS — SPACED AWAY FROM BENCHES
+// ============================================================
+
+function createTrashBin(x, z) {
+    if (!reservePropSpot(x, z, 1.2)) {
+        return;
+    }
+
+    const bin = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.35, 0.4, 1.1, 10),
+        mat.metal
+    );
+
+    bin.position.set(x, 0.55, z);
+    scene.add(bin);
+
+    const lid = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.38, 0.38, 0.12, 10),
+        mat.concrete
+    );
+
+    lid.position.set(x, 1.13, z);
+    scene.add(lid);
+
+    addCollider(x, z, 1, 1);
+}
+
+for (let z = -180; z <= 180; z += 60) {
+    createTrashBin(-25.5, z + 20);
+    createTrashBin(25.5, z);
+}
+
+// ============================================================
+// CLOUDS
+// ============================================================
+
+const clouds = [];
+
+const cloudMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 1,
+    transparent: true,
+    opacity: 0.94
+});
+
+function createCloud(x, y, z, size = 1) {
+    const cloud = new THREE.Group();
+
+    cloud.position.set(x, y, z);
+    cloud.scale.setScalar(size);
+
+    scene.add(cloud);
+
+    const puffPositions = [
+        [-2.0, 0, 0],
+        [-0.9, 0.6, 0],
+        [0.3, 0.8, 0],
+        [1.5, 0.3, 0],
+        [2.2, 0, 0],
+        [0, -0.1, 0.5]
+    ];
+
+    for (let i = 0; i < puffPositions.length; i++) {
+        const puff = new THREE.Mesh(
+            cloudSphereGeometry,
+            cloudMaterial
+        );
+
+        const puffSize = i === 2 ? 1.6 : 1.2;
+
+        puff.position.set(...puffPositions[i]);
+
+        puff.scale.set(
+            puffSize,
+            puffSize * (0.65 + Math.random() * 0.2),
+            puffSize
+        );
+
+        cloud.add(puff);
+    }
+
+    clouds.push({
+        object: cloud,
+        speed: 0.7 + Math.random() * 0.5
+    });
+}
+
+createCloud(-190, 85, -310, 5);
+createCloud(40, 100, -350, 6);
+createCloud(220, 82, -170, 4);
+createCloud(-260, 95, 110, 5);
+createCloud(170, 110, 280, 5);
+createCloud(-40, 90, 350, 4);
+
+// ============================================================
+// PLAYER CHARACTER — CONNECTED BODY HIERARCHY
+// ============================================================
+
+const player = new THREE.Group();
+scene.add(player);
+
+const skinMaterial = new THREE.MeshStandardMaterial({
+    color: 0xd5a17d,
+    roughness: 0.85
+});
+
+const shirtMaterial = new THREE.MeshStandardMaterial({
+    color: 0x253d62,
+    roughness: 0.85
+});
+
+const pantsMaterial = new THREE.MeshStandardMaterial({
+    color: 0x202a35,
+    roughness: 0.9
+});
+
+const shoeMaterial = new THREE.MeshStandardMaterial({
+    color: 0x17191c,
+    roughness: 0.8
+});
+
+function makeCharacterMesh(
+    parent,
+    geometry,
+    material,
+    x, y, z
+) {
+    const mesh = new THREE.Mesh(geometry, material);
+
+    mesh.position.set(x, y, z);
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+
+    parent.add(mesh);
+
+    return mesh;
+}
+
+// The torso is its own group.
+// All upper-body parts are attached to this group.
+
+const torso = new THREE.Group();
+torso.position.set(0, 1.65, 0);
+player.add(torso);
+
+// Body
+
+makeCharacterMesh(
+    torso,
+    new THREE.BoxGeometry(0.85, 1.15, 0.48),
+    shirtMaterial,
+    0, 0, 0
+);
+
+// Head
+
+const head = new THREE.Group();
+head.position.set(0, 0.78, 0);
+torso.add(head);
+
+makeCharacterMesh(
+    head,
+    new THREE.SphereGeometry(0.32, 16, 12),
+    skinMaterial,
+    0, 0.05, 0
+);
+
+// Simple face detail
+
+makeCharacterMesh(
+    head,
+    new THREE.BoxGeometry(0.22, 0.07, 0.04),
+    shoeMaterial,
+    0, 0.05, 0.29
+);
+
+// Arms are attached to shoulder pivots.
+// Their upper and lower sections are connected.
+
+const arms = [];
+
+for (const side of [-1, 1]) {
+    const shoulder = new THREE.Group();
+
+    shoulder.position.set(side * 0.48, 0.42, 0);
+    torso.add(shoulder);
+
+    makeCharacterMesh(
+        shoulder,
+        new THREE.BoxGeometry(0.25, 0.65, 0.29),
+        shirtMaterial,
+        0, -0.32, 0
+    );
+
+    const elbow = new THREE.Group();
+    elbow.position.set(0, -0.62, 0);
+    shoulder.add(elbow);
+
+    makeCharacterMesh(
+        elbow,
+        new THREE.BoxGeometry(0.21, 0.34, 0.24),
+        shirtMaterial,
+        0, -0.16, 0
+    );
+
+    makeCharacterMesh(
+        elbow,
+        new THREE.SphereGeometry(0.13, 10, 8),
+        skinMaterial,
+        0, -0.39, 0
+    );
+
+    arms.push({
+        shoulder,
+        elbow,
+        side
+    });
+}
+
+// Legs are attached to hip pivots.
+// Knees and shoes move with the legs instead of floating separately.
+
+const legs = [];
+
+for (const side of [-1, 1]) {
+    const hip = new THREE.Group();
+
+    hip.position.set(side * 0.23, 1.05, 0);
+    player.add(hip);
+
+    makeCharacterMesh(
+        hip,
+        new THREE.BoxGeometry(0.29, 0.58, 0.32),
+        pantsMaterial,
+        0, -0.29, 0
+    );
+
+    const knee = new THREE.Group();
+    knee.position.set(0, -0.56, 0);
+    hip.add(knee);
+
+    makeCharacterMesh(
+        knee,
+        new THREE.BoxGeometry(0.27, 0.37, 0.3),
+        pantsMaterial,
+        0, -0.18, 0
+    );
+
+    makeCharacterMesh(
+        knee,
+        new THREE.BoxGeometry(0.34, 0.2, 0.55),
+        shoeMaterial,
+        0, -0.39, 0.1
+    );
+
+    legs.push({
+        hip,
+        knee,
+        side
+    });
+}
+
+player.position.set(0, 0, 12);
+
+// ============================================================
+// PLAYER INPUT
+// ============================================================
+
+const keys = {};
+
+let velocityY = 0;
+let grounded = true;
+
+window.addEventListener("keydown", (event) => {
+    keys[event.code] = true;
+
+    if (
+        event.code === "Space" &&
+        grounded &&
+        !event.repeat
+    ) {
+        velocityY = SETTINGS.jumpPower;
+        grounded = false;
+    }
+});
+
+window.addEventListener("keyup", (event) => {
+    keys[event.code] = false;
+});
+
+window.addEventListener("blur", () => {
+    for (const key in keys) {
+        keys[key] = false;
+    }
+});
+
+// ============================================================
+// WORLD COLLISION
+// ============================================================
+
+function collidesAt(x, z) {
+    const radius = SETTINGS.playerRadius;
+
+    const worldLimit = SETTINGS.worldHalfSize - radius;
+
+    if (
+        x < -worldLimit ||
+        x > worldLimit ||
+        z < -worldLimit ||
+        z > worldLimit
+    ) {
+        return true;
+    }
+
+    for (const box of colliders) {
+        if (
+            x + radius > box.minX &&
+            x - radius < box.maxX &&
+            z + radius > box.minZ &&
+            z - radius < box.maxZ
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// ============================================================
+// TREE COLLISION
+// ============================================================
+
+const playerBodyCenter = new THREE.Vector3();
+const treePartWorldCenter = new THREE.Vector3();
+const awayDirection = new THREE.Vector3();
+const inverseTreeRotation = new THREE.Quaternion();
+
+function treeCollisionAt(x, z, playerY) {
+    for (const tree of interactiveTrees) {
+        const dx = x - tree.trunkCollider.x;
+        const dz = z - tree.trunkCollider.z;
+
+        const distanceSquared = dx * dx + dz * dz;
+
+        const collisionRadius =
+            SETTINGS.playerRadius + tree.trunkCollider.radius;
+
+        if (
+            distanceSquared <
+            collisionRadius * collisionRadius
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function updateTreeInteractions(delta) {
+    playerBodyCenter.set(
+        player.position.x,
+        player.position.y + 1.35,
+        player.position.z
+    );
+
+    for (const tree of interactiveTrees) {
+        inverseTreeRotation
+            .copy(tree.root.quaternion)
+            .invert();
+
+        for (const part of tree.parts) {
+            let targetX = 0;
+            let targetZ = 0;
+
+            if (part.type !== "trunk") {
+                treePartWorldCenter
+                    .copy(part.center)
+                    .applyQuaternion(tree.root.quaternion)
+                    .add(tree.root.position);
+
+                const dx =
+                    playerBodyCenter.x - treePartWorldCenter.x;
+
+                const dy =
+                    playerBodyCenter.y - treePartWorldCenter.y;
+
+                const dz =
+                    playerBodyCenter.z - treePartWorldCenter.z;
+
+                const distance = Math.sqrt(
+                    dx * dx + dy * dy + dz * dz
+                );
+
+                const contactRadius =
+                    part.radius +
+                    SETTINGS.playerRadius +
+                    SETTINGS.treeCollisionPadding;
+
+                if (distance < contactRadius) {
+                    awayDirection.set(-dx, 0, -dz);
+
+                    if (awayDirection.lengthSq() > 0.0001) {
+                        awayDirection.normalize();
+                        awayDirection.applyQuaternion(inverseTreeRotation);
+
+                        const strength =
+                            1 - distance / contactRadius;
+
+                        const amount =
+                            strength * SETTINGS.treeLeafPushStrength;
+
+                        targetX = awayDirection.z * amount;
+                        targetZ = -awayDirection.x * amount;
+
+                        if (part.type === "branch") {
+                            const ratio =
+                                SETTINGS.treeBranchPushStrength /
+                                SETTINGS.treeLeafPushStrength;
+
+                            targetX *= ratio;
+                            targetZ *= ratio;
+                        }
+                    }
+                }
+            }
+
+            const recovery = part.type === "branch"
+                ? SETTINGS.treeBranchRecovery
+                : SETTINGS.treeLeafRecovery;
+
+            const blend = 1 - Math.exp(-delta * recovery);
+
+            part.bendX += (targetX - part.bendX) * blend;
+            part.bendZ += (targetZ - part.bendZ) * blend;
+
+            part.pivot.rotation.x = part.bendX;
+            part.pivot.rotation.z = part.bendZ;
+        }
+    }
+}
+
+// ============================================================
+// CAMERA AND MOUSE
+// ============================================================
+
+let cameraYaw = 0;
+let cameraPitch = 0.22;
+let pointerLocked = false;
+
+const cameraTarget = new THREE.Vector3();
+const cameraDesired = new THREE.Vector3();
+const cameraDirection = new THREE.Vector3();
+
+const cameraRaycaster = new THREE.Raycaster();
+const cameraBlockers = [];
+
+function rebuildCameraBlockers() {
+    cameraBlockers.length = 0;
+
+    scene.traverse((object) => {
+        if (
+            object.isMesh &&
+            object.geometry === unitBoxGeometry &&
+            object.userData.cameraBlocker
+        ) {
+            cameraBlockers.push(object);
+        }
+    });
+}
+
+renderer.domElement.addEventListener("click", () => {
+    renderer.domElement.requestPointerLock();
+});
+
+document.addEventListener("pointerlockchange", () => {
+    pointerLocked =
+        document.pointerLockElement === renderer.domElement;
+});
+
+document.addEventListener("mousemove", (event) => {
+    if (!pointerLocked) return;
+
+    cameraYaw -= event.movementX * 0.0025;
+    cameraPitch -= event.movementY * 0.0018;
+
+    cameraPitch = THREE.MathUtils.clamp(
+        cameraPitch,
+        -0.25,
+        0.8
+    );
+});
+
+// ============================================================
+// CAMERA COLLISION
+// ============================================================
+
+function updateCamera() {
+    const distance = 7;
+    const height = 3.1;
+
+    const horizontalDistance =
+        distance * Math.cos(cameraPitch);
+
+    cameraTarget.set(
+        player.position.x,
+        player.position.y + 1.5,
+        player.position.z
+    );
+
+    cameraDesired.set(
+        player.position.x +
+            Math.sin(cameraYaw) * horizontalDistance,
+
+        player.position.y +
+            height +
+            Math.sin(cameraPitch) * distance,
+
+        player.position.z +
+            Math.cos(cameraYaw) * horizontalDistance
+    );
+
+    cameraDirection
+        .copy(cameraDesired)
+        .sub(cameraTarget);
+
+    const desiredDistance = cameraDirection.length();
+
+    cameraDirection.normalize();
+
+    cameraRaycaster.set(cameraTarget, cameraDirection);
+    cameraRaycaster.far = desiredDistance;
+
+    const hits = cameraRaycaster.intersectObjects(
+        cameraBlockers,
+        false
+    );
+
+    let allowedDistance = desiredDistance;
+
+    if (hits.length) {
+        allowedDistance = Math.max(
+            0.7,
+            hits[0].distance - 0.35
+        );
+    }
+
+    camera.position
+        .copy(cameraTarget)
+        .addScaledVector(cameraDirection, allowedDistance);
+
+    camera.lookAt(cameraTarget);
+}
+
+rebuildCameraBlockers();
+
+// ============================================================
+// CHARACTER ANIMATION
+// ============================================================
+
+// The animation uses connected pivot groups.
+// The arms swing opposite to the legs.
+// Knees bend during the backward part of the step.
+
+let walkCycle = 0;
+let animationBlend = 0;
+
+const animationState = {
+    legSwing: 0,
+    kneeBend: 0,
+    armSwing: 0,
+    elbowBend: 0,
+    bodyBob: 0,
+    bodyLean: 0
+};
+
+function smoothTowards(current, target, speed, delta) {
+    return THREE.MathUtils.damp(
+        current,
+        target,
+        speed,
+        delta
+    );
+}
+
+function updateCharacterAnimation(delta, moving, running) {
+    const targetBlend = moving ? 1 : 0;
+
+    animationBlend = smoothTowards(
+        animationBlend,
+        targetBlend,
+        moving ? 12 : 9,
+        delta
+    );
+
+    if (moving) {
+        walkCycle += delta * (running ? 13 : 9);
+    }
+
+    const stride = Math.sin(walkCycle);
+    const oppositeStride = Math.sin(walkCycle + Math.PI);
+
+    const legTarget = stride * 0.48;
+    const kneeTarget = Math.max(0, -stride) * 0.55;
+
+    const armTarget = -stride * 0.38;
+    const elbowTarget = Math.max(0, stride) * 0.25;
+
+    animationState.legSwing = smoothTowards(
+        animationState.legSwing,
+        legTarget * animationBlend,
+        14,
+        delta
+    );
+
+    animationState.kneeBend = smoothTowards(
+        animationState.kneeBend,
+        kneeTarget * animationBlend,
+        14,
+        delta
+    );
+
+    animationState.armSwing = smoothTowards(
+        animationState.armSwing,
+        armTarget * animationBlend,
+        14,
+        delta
+    );
+
+    animationState.elbowBend = smoothTowards(
+        animationState.elbowBend,
+        elbowTarget * animationBlend,
+        14,
+        delta
+    );
+
+    const bobTarget =
+        moving ? Math.abs(Math.sin(walkCycle * 2)) * 0.055 : 0;
+
+    animationState.bodyBob = smoothTowards(
+        animationState.bodyBob,
+        bobTarget,
+        12,
+        delta
+    );
+
+    const leanTarget = moving ? 0.055 : 0;
+
+    animationState.bodyLean = smoothTowards(
+        animationState.bodyLean,
+        leanTarget,
+        8,
+        delta
+    );
+
+    // Legs: opposite movement, with a small knee bend.
+
+    for (const leg of legs) {
+        const phase = leg.side === 1 ? 0 : Math.PI;
+
+        leg.hip.rotation.x =
+            Math.sin(walkCycle + phase) *
+            0.48 *
+            animationBlend;
+
+        leg.knee.rotation.x =
+            Math.max(
+                0,
+                -Math.sin(walkCycle + phase)
+            ) *
+            0.55 *
+            animationBlend;
+    }
+
+    // Arms: opposite to the legs.
+
+    for (const arm of arms) {
+        const phase = arm.side === 1 ? Math.PI : 0;
+
+        arm.shoulder.rotation.x =
+            Math.sin(walkCycle + phase) *
+            0.38 *
+            animationBlend;
+
+        arm.elbow.rotation.x =
+            Math.max(
+                0,
+                Math.sin(walkCycle + phase)
+            ) *
+            0.25 *
+            animationBlend;
+    }
+
+    torso.position.y = 1.65 + animationState.bodyBob;
+    torso.rotation.x = -animationState.bodyLean;
+
+    head.rotation.x = animationState.bodyLean * 0.35;
+}
+
+// ============================================================
+// PLAYER UPDATE
+// ============================================================
+
+const clock = new THREE.Clock();
+
+function updatePlayer(delta) {
+    let moveX = 0;
+    let moveZ = 0;
+
+    if (keys.KeyW || keys.ArrowUp) moveZ -= 1;
+    if (keys.KeyS || keys.ArrowDown) moveZ += 1;
+    if (keys.KeyA || keys.ArrowLeft) moveX -= 1;
+    if (keys.KeyD || keys.ArrowRight) moveX += 1;
+
+    const moving = moveX !== 0 || moveZ !== 0;
+
+    const running =
+        keys.ShiftLeft || keys.ShiftRight;
+
+    if (moving) {
+        const length = Math.hypot(moveX, moveZ);
+
+        moveX /= length;
+        moveZ /= length;
+
+        const sin = Math.sin(cameraYaw);
+        const cos = Math.cos(cameraYaw);
+
+        const worldX = moveX * cos + moveZ * sin;
+        const worldZ = -moveX * sin + moveZ * cos;
+
+        const speed = running
+            ? SETTINGS.runSpeed
+            : SETTINGS.walkSpeed;
+
+        const nextX =
+            player.position.x + worldX * speed * delta;
+
+        const nextZ =
+            player.position.z + worldZ * speed * delta;
+
+        if (
+            !collidesAt(nextX, player.position.z) &&
+            !treeCollisionAt(nextX, player.position.z, player.position.y)
+        ) {
+            player.position.x = nextX;
+        }
+
+        if (
+            !collidesAt(player.position.x, nextZ) &&
+            !treeCollisionAt(player.position.x, nextZ, player.position.y)
+        ) {
+            player.position.z = nextZ;
+        }
+
+        player.lookAt(
+            player.position.x + worldX,
+            player.position.y,
+            player.position.z + worldZ
+        );
+    }
+
+    updateCharacterAnimation(delta, moving, running);
+
+    // Gravity and jumping
+
+    velocityY -= SETTINGS.gravity * delta;
+    player.position.y += velocityY * delta;
+
+    if (player.position.y <= 0) {
+        player.position.y = 0;
+        velocityY = 0;
+        grounded = true;
+    }
+}
+
+// ============================================================
+// ENVIRONMENT UPDATE
+// ============================================================
+
+function updateEnvironment(delta) {
+    for (const cloud of clouds) {
+        cloud.object.position.x += cloud.speed * delta;
+
+        if (cloud.object.position.x > SETTINGS.worldHalfSize) {
+            cloud.object.position.x = -SETTINGS.worldHalfSize;
+        }
+    }
+}
+
+// ============================================================
+// PERFORMANCE MONITOR
+// ============================================================
+
+let debugTimer = 0;
+
+function updatePerformance(delta) {
+    if (!SETTINGS.debug) return;
+
+    debugTimer += delta;
+
+    if (debugTimer < 2) return;
+
+    debugTimer = 0;
+
+    console.log("===== GCA PERFORMANCE =====");
+    console.log("Draw calls:", renderer.info.render.calls);
+    console.log("Triangles:", renderer.info.render.triangles);
+    console.log("Geometries:", renderer.info.memory.geometries);
+    console.log("Textures:", renderer.info.memory.textures);
+    console.log("Loaded trees:", interactiveTrees.length);
+    console.log("Planned tree locations:", treePositionList.length);
+    console.log(
+        "World footprint:",
+        SETTINGS.worldHalfSize * 2,
+        "x",
+        SETTINGS.worldHalfSize * 2
+    );
+    console.log("===========================");
+}
+
+// ============================================================
+// MAIN GAME LOOP
+// ============================================================
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    const delta = Math.min(clock.getDelta(), 0.05);
+
+    updatePlayer(delta);
+    updateTreeInteractions(delta);
+    updateCamera();
+    updateEnvironment(delta);
+
+    renderer.render(scene, camera);
+
+    updatePerformance(delta);
+}
+
+animate();
+
+// ============================================================
+// RESIZE
+// ============================================================
+
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
+
+    renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio, SETTINGS.maxPixelRatio)
+    );
+});
+
+// ============================================================
+// STARTUP
+// ============================================================
+
+document.querySelector("#loading-screen")?.remove();
+
+console.info("GCA: City initialized.");
+console.info("GCA: Instanced windows enabled.");
+console.info("GCA: Localized tree sections enabled.");
+console.info("GCA: Camera collision enabled.");
+console.info("GCA: Connected character animation enabled.");
+console.info("GCA: Improved prop spacing enabled.");
+console.info("GCA: Waiting for optimized Jacaranda model.");
 
 # =============================================================
 
