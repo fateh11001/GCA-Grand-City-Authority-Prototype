@@ -17,13 +17,9 @@ cd ~/Documents/"GCA - Grand City Authority Prototype"
 npm init -y
 npm install three
 npm install -D vite
-mkdir -p public/assets src/core src/world src/player src/vehicles src/npcs src/missions src/audio src/ui src/utils
 
 Then:
 
-rmdir src/vehicles src/npcs src/missions src/audio
-mkdir -p public/assets/models public/assets/textures
-rm -rf public src
 mkdir -p public/assets/models public/assets/textures src/core src/world src/player src/ui
 
 Then:
