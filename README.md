@@ -4,7 +4,7 @@ File location: GCA - Grand City Authority/index.html (the file in the main proje
 2. Delete everything inside it.
 3. Paste this complete code:
 
-<!DOCTYPE html>
+"<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -23,7 +23,7 @@ File location: GCA - Grand City Authority/index.html (the file in the main proje
 
     <script type="module" src="/src/main.js"></script>
 </body>
-</html>
+</html>"
 
 
 
@@ -37,7 +37,7 @@ File location: GCA - Grand City Authority/src/style.css
 4. Paste this complete code:
 
 
-* {
+"* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -94,7 +94,7 @@ canvas {
     font-size: 11px;
     letter-spacing: 3px;
     color: #65c8a3;
-}
+}"
 
 5. Press Command + S to save.
 
@@ -106,7 +106,7 @@ File location: GCA - Grand City Authority/src/main.js
 4. Paste this complete code:
 
 
-import * as THREE from 'three';
+"import * as THREE from 'three';
 import './style.css';
 
 // =====================================
@@ -502,6 +502,6 @@ window.addEventListener('resize', () => {
 // Hide loading screen
 document.getElementById('loading-screen').style.display = 'none';
 
-console.log('GCA Prototype 1.0 initialized.');
+console.log('GCA Prototype 1.0 initialized.');"
 
 5. Press Command + S.
